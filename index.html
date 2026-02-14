@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> happy valentine day </title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: black;
+            height: 100vh;
+            width: 100vw;
+            font-family: sans-serif;
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        #arrow {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 80px;
+            color: white;
+            animation: bounce 1s infinite;
+            display: none;
+            z-index: 2;
+        }
+        
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translate(-50%, 0);
+            }
+            50% {
+                transform: translate(-50%, -15px);
+            }
+        }
+        
+        #btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 28px;
+            background: rgba(255, 105, 180, 0.8);
+            color: white;
+            font-size: 22px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            display: none;
+            z-index: 2;
+            transition: transform 0.3s, background 0.3s;
+        }
+        
+        #btn:hover {
+            transform: translateX(-50%) scale(1.1);
+            background: rgba(255, 105, 180, 1);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bg"></canvas>
+    <canvas id="text"></canvas>
+    <div id="arrow">⬇</div>
+    <button id="btn"> Ấn zô đây ❤️ </button>
+
+    <script>
+        const bg = document.getElementById('bg');
+        const bgCtx = bg.getContext('2d');
+        let w = bg.width = window.innerWidth;
+        let h = bg.height = window.innerHeight;
+
+        let letters = "0101".split("");
+        let fontSize = 24;
+        let columns = Math.floor(w / fontSize);
+        let drops = [];
+        for (let i = 0; i < columns; i++) drops[i] = Math.random() * h;
+
+        function drawBG() {
+            bgCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            bgCtx.fillRect(0, 0, w, h);
+            bgCtx.fillStyle = "#ffeff7";
+            bgCtx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                let text = letters[Math.floor(Math.random() * letters.length)];
+                bgCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > h || Math.random() > 0.95) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawBG, 33);
+
+        const canvas = document.getElementById('text');
+        const ctx = canvas.getContext('2d');
+        canvas.width = w;
+        canvas.height = h;
+
+        let words = [{
+            text: "CHÚC",
+            color: "# 87CEFA"
+        }, {
+            text: " RIZ ",
+            color: "#ffcc99"
+        }, {
+            text: " YEU ",
+            color: "#ffff99"
+        }, {
+            text: " VALENTINE ",
+            color: "#ccffcc"
+        }, {
+            text: " ZUI ZẺ ",
+            color: "#99ccff",
+        },{
+            text: " NHOOO ❤️❤️",
+            color: "#fc0c0c"
+        }]
+        let current = 0;
+        let particles = [];
+        let nextTime = 0;
+        let delay = 2000;
+        let currentColor = "white";
+
+        function createParticlesFromText(word, color) {
+            const tempCanvas = document.createElement("canvas");
+            const tempCtx = tempCanvas.getContext("2d");
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            tempCtx.clearRect(0, 0, w, h);
+            tempCtx.font = word === "⬇" ? "bold 240px sans-serif" : "bold 140px sans-serif";
+            tempCtx.fillStyle = "white";
+            tempCtx.textAlign = "center";
+            tempCtx.textBaseline = "middle";
+            tempCtx.fillText(word, w / 2, h / 2);
+            const data = tempCtx.getImageData(0, 0, w, h).data;
+            let newParticles = [];
+            for (let y = 0; y < h; y += 6) {
+                for (let x = 0; x < w; x += 6) {
+                    const index = (y * w + x) * 4;
+                    if (data[index + 3] > 128) {
+                        newParticles.push({
+                            x: Math.random() * w,
+                            y: Math.random() * h,
+                            tx: x,
+                            ty: y,
+                            alpha: 0
+                        });
+                    }
+                }
+            }
+            particles = newParticles;
+            currentColor = color;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, w, h);
+            const t = Date.now();
+            if (t > nextTime && current < words.length) {
+                createParticlesFromText(words[current].text, words[current].color);
+                if (words[current].isArrow) {
+                    document.getElementById('arrow').style.display = 'block';
+                }
+                current++;
+                nextTime = t + delay;
+                if (current === words.length) {
+                    setTimeout(() => {
+                        document.getElementById('arrow').style.display = 'none';
+                        document.getElementById('btn').style.display = 'block';
+                    }, 2000);
+                }
+            }
+            particles.forEach(p => {
+                p.x += (p.tx - p.x) * 0.1;
+                p.y += (p.ty - p.y) * 0.1;
+                p.alpha += (1 - p.alpha) * 0.05;
+                ctx.fillStyle = `rgba(${hexToRgb(currentColor)}, ${p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        animate();
+
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.replace('#', ''), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `${r}, ${g}, ${b}`;
+        }
+
+        document.getElementById('btn').onclick = () => {
+            window.location.href = 'a.html';
+
+        };
+
+        window.onresize = () => {
+            w = bg.width = canvas.width = window.innerWidth;
+            h = bg.height = canvas.height = window.innerHeight;
+            columns = Math.floor(w / fontSize);
+            drops = [];
+            for (let i = 0; i < columns; i++) drops[i] = Math.random() * h;
+        };
+    </script>
+</body>
+
+</html>
